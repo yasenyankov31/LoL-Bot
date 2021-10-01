@@ -5,10 +5,14 @@ import pyautogui as p
 import numpy as np
 import time
 
+
+champions=['ivern','diana','jinx,','malphite','master','mordekaiser']
+
+
 pytesseract.tesseract_cmd = "C:\\Program Files\\Tesseract-OCR\\tesseract.exe"
-def FindChampion(name):
+def FindChampion():
     img = p.screenshot()
-    img.save('D:\\Programirane\\LeagueBot\\templates\\screnshot.png')
+    img.save('D:\\screnshot.png')
     img = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
     blur = cv2.pyrMeanShiftFiltering(img, 11, 11)
     gray = cv2.cvtColor(blur, cv2.COLOR_BGR2GRAY)
@@ -17,14 +21,21 @@ def FindChampion(name):
     image_data = pytesseract.image_to_data(thresh, output_type=Output.DICT)
     print('done')
     for i, word in enumerate(image_data['text']):
-        if word.lower() == name:
-                x, y, = image_data['left'][i], image_data['top'][i]
-                p.moveTo(x, y)
-                p.click()
+        if word.lower()!='lock':
+            for x in champions:
+                if word.lower()==x:
+                        x, y, = image_data['left'][i], image_data['top'][i]
+                        p.moveTo(x, y)
+                        p.click()
+                        break
+        else:
+            x, y, = image_data['left'][i], image_data['top'][i]
+            p.moveTo(x, y)
+            p.click()
 
 def FindButton(name):
     img = p.screenshot()
-    img.save('D:\\Programirane\\LeagueBot\\templates\\screnshot.png')
+    img.save('D:\\screnshot.png')
     img = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
     image_greyscale = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
@@ -57,12 +68,12 @@ def main():
     FindButton('beginner')
     time.sleep(3)
     FindButton('confirm')
-    time.sleep(3)
+    time.sleep(5)
     p.click()
     ans='q'
     while ans=='q': 
         img = p.screenshot()
-        img.save('D:\\Programirane\\LeagueBot\\templates\\screnshot.png')
+        img.save('D:\\screnshot.png')
         img = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
         image_greyscale = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
@@ -79,9 +90,9 @@ def main():
                 p.moveTo(x, y-55)
                 p.click()
                 ans='d'
-    time.sleep(3)
-    FindChampion('teemo')
-    FindChampion('lock')
+    time.sleep(5)
+    FindChampion()
+    FindChampion()
 
 if __name__ == "__main__":
     main()

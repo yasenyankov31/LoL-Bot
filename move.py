@@ -1,9 +1,19 @@
 import pydirectinput
-import cv2
 import time
+import pyautogui
 time.sleep(3)
-while True:
-    pydirectinput.click(button='right')
-    if cv2.waitKey(25) & 0xFF == ord("q"):
-        break
 
+while True:
+    pydirectinput.moveTo(752,360)
+    pydirectinput.click(button='right')
+    pydirectinput.moveTo(1210,375)
+    pydirectinput.click(button='right')
+    pydirectinput.moveTo(841,563)
+    pydirectinput.click(button='right')
+    pydirectinput.moveTo(701,512)
+    pydirectinput.click(button='right')
+             
+                            #752  360
+
+# 701 512                                                                 #1210 375            
+                            #  #841 563
