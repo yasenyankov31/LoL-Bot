@@ -5,11 +5,11 @@ from pytesseract import pytesseract
 from pytesseract import Output
 pytesseract.tesseract_cmd = "C:\\Program Files\\Tesseract-OCR\\tesseract.exe"
 #pyautogui.displayMousePosition()
-img=cv2.imread('templates/screnshot.png')
+img=cv2.imread('templates/frame683.png')
 blur = cv2.pyrMeanShiftFiltering(img, 11, 11)
 gray = cv2.cvtColor(blur, cv2.COLOR_BGR2GRAY)
 thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)[1]
-image_data = pytesseract.image_to_data(thresh, output_type=Output.DICT)
+image_data = pytesseract.image_to_data(img, output_type=Output.DICT)
 
 
 # Printing each word
