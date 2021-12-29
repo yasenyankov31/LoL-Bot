@@ -1,8 +1,8 @@
 {
-    "python.pythonPath": "C:\\Anaconda\\envs\\lol-bot\\python.exe",
-    "python.autoComplete.extraPaths": ["C:\\Anaconda\\envs\\lol-bot\\Scripts"],
+    "python.pythonPath": "D:\\Anaconda\\envs\\lol-bot\\python.exe",
+    "python.autoComplete.extraPaths": ["D:\\Anaconda\\envs\\lol-bot\\Scripts"],
     "terminal.integrated.automationShell.windows": "Command Prompt",
     "python.analysis.extraPaths": [
-        "C:\\Anaconda\\envs\\lol-bot\\Scripts"
+        "D:\\Anaconda\\envs\\lol-bot\\Scripts"
     ]
 }
