@@ -2,8 +2,10 @@
 # palette with trackbars 
   
 # importing libraries
+from turtle import pu
 import cv2
 import numpy as np
+import pyautogui
    
 # empty function called when
 # any trackbar moves
@@ -46,16 +48,27 @@ def main():
         green1 = cv2.getTrackbarPos('Green1', windowName)
         red1 = cv2.getTrackbarPos('Red1', windowName)
           
-        image = cv2.imread('screnshot.png')
+        image = pyautogui.screenshot()
 
+        image = cv2.cvtColor(np.array(image), cv2.COLOR_BGR2HSV)
         original = image.copy()
-        #image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+        
+        
+        #image = cv2.blur(image, (3,3)) 
+        
+        
 
 
         lower = np.array([red,green,blue], dtype="uint8")
         upper = np.array([red1,green1,blue1], dtype="uint8")
         mask = cv2.inRange(image, lower, upper)
+    
+        #define kernel size  
+        
+        # Remove unnecessary noise from mask
 
+        
+        """
         cnts = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         cnts = cnts[0] if len(cnts) == 2 else cnts[1]
 
@@ -65,7 +78,8 @@ def main():
             if w>10 and h>20 and w<200 and h<200:
                 cv2.rectangle(original, (x, y), (x + w, y + h), (36,255,12), 2)
 
-
+        """
+        original = cv2.bitwise_and(original, original, mask=mask)
 
         scale_percent = 60 # percent of original size
         width = int(original.shape[1] * scale_percent / 100)
@@ -73,7 +87,7 @@ def main():
         dim = (width, height)
 
         # resize image
-        resized = cv2.resize(mask, dim, interpolation = cv2.INTER_AREA)
+        resized = cv2.resize(original, dim, interpolation = cv2.INTER_AREA)
 
         cv2.imshow("result1", resized)
 
