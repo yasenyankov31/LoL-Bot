@@ -30,6 +30,7 @@ def main():
     cv2.createTrackbar('Green1', windowName, 0, 255, emptyFunction)
     cv2.createTrackbar('Red1', windowName, 0, 255, emptyFunction)
 
+
     
        
     # Used to open the window
@@ -47,47 +48,49 @@ def main():
         blue1 = cv2.getTrackbarPos('Blue1', windowName)
         green1 = cv2.getTrackbarPos('Green1', windowName)
         red1 = cv2.getTrackbarPos('Red1', windowName)
+
           
         image = pyautogui.screenshot()
-
-        image = cv2.cvtColor(np.array(image), cv2.COLOR_BGR2HSV)
+        
+        #image=cv2.imread("level.png")
+        image = cv2.cvtColor(np.array(image), cv2.COLOR_BGR2RGB)
         original = image.copy()
         
-        
-        #image = cv2.blur(image, (3,3)) 
-        
-        
-
-
         lower = np.array([red,green,blue], dtype="uint8")
         upper = np.array([red1,green1,blue1], dtype="uint8")
         mask = cv2.inRange(image, lower, upper)
+
+        kernel = np.ones((12,12),np.uint8)
+        #mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
     
-        #define kernel size  
-        
-        # Remove unnecessary noise from mask
 
         
-        """
-        cnts = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        cnts = cnts[0] if len(cnts) == 2 else cnts[1]
-
-
-        for c in cnts:
-            x,y,w,h = cv2.boundingRect(c)
-            if w>10 and h>20 and w<200 and h<200:
-                cv2.rectangle(original, (x, y), (x + w, y + h), (36,255,12), 2)
-
-        """
         original = cv2.bitwise_and(original, original, mask=mask)
+        
+        gray = cv2.cvtColor(original,cv2.COLOR_BGR2GRAY)
 
+
+        
+        edged = cv2.Canny(gray, 30, 200)
+
+        contours = cv2.findContours(edged, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+        contours = contours[0] if len(contours) == 2 else contours[1]
+
+        i=0
+
+        for c in contours:
+            x,y,w,h = cv2.boundingRect(c)
+            if w>10 and y<=int(image.shape[0]/2):
+                i+=1
+        
+        print(i)
         scale_percent = 60 # percent of original size
         width = int(original.shape[1] * scale_percent / 100)
         height = int(original.shape[0] * scale_percent / 100)
         dim = (width, height)
 
         # resize image
-        resized = cv2.resize(original, dim, interpolation = cv2.INTER_AREA)
+        resized = cv2.resize(mask, dim, interpolation = cv2.INTER_AREA)
 
         cv2.imshow("result1", resized)
 

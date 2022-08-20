@@ -1,6 +1,5 @@
-from turtle import position
+from operator import le
 import cv2
-from cv2 import imshow
 from pytesseract import pytesseract
 from pytesseract import Output
 import pyautogui as p
@@ -13,7 +12,7 @@ from win32gui import FindWindow, GetWindowRect
 import multiprocessing as mp
 import autoit
 import psutil
-import random
+
 
 user32 = ctypes.windll.user32
 
@@ -22,6 +21,20 @@ lol_game='League of Legends (TM) Client'
 lol_client='League of Legends'
 pytesseract.tesseract_cmd = "C:\\Program Files\\Tesseract-OCR\\tesseract.exe"
 
+def ScreenShotLeague():
+    image =screenshot(lol_game)
+    image.save("level.png")
+
+def ShowSmallImg(original):
+        scale_percent = 60 # percent of original size
+        width = int(original.shape[1] * scale_percent / 100)
+        height = int(original.shape[0] * scale_percent / 100)
+        dim = (width, height)
+
+        # resize image
+        resized = cv2.resize(original, dim, interpolation = cv2.INTER_AREA)
+
+        cv2.imshow("result1", resized)
 
 def sleep(x):
     for i in range(x):
@@ -131,7 +144,7 @@ def FindMenuWord(menu_word,clicks):
             autoit.mouse_click("left", x, y, clicks)
             break
 
-def ButItems():
+def BuyItems():
     press_key("p")
     sleep(2)
     FindMenuWord('recommended',1)
@@ -139,12 +152,12 @@ def ButItems():
     FindMenuWord('generally',2)
     press_key("p")
 
-def StartGame():
+def LaunchGame():
     buttons=['play','pvp','aram','confirm','find']
     for button in buttons:
         FindButton(button)
         sleep(3)
-        queue=mp.Queue()
+    queue=mp.Queue()
 
     p1 = mp.Process(target=Accept)
     p2 = mp.Process(target=StopAccept, args=(queue,))
@@ -214,21 +227,114 @@ def DetectHealth():
             print("dead")
         else:
             print("alive")
-                          
-def DetectTowers():
+              
+def DetectAllyTowers(queue):
+    red,green,blue=165,116,58
+    red1,green1,blue1=168,119,59
+    checker=True
+    healthbars=0
+    while True:
+        image =screenshot(lol_game)
+        image = cv2.cvtColor(np.array(image), cv2.COLOR_BGR2RGB)
+        original = image.copy()
+        
+        lower = np.array([red,green,blue], dtype="uint8")
+        upper = np.array([red1,green1,blue1], dtype="uint8")
+        mask = cv2.inRange(image, lower, upper)
+
+        kernel = np.ones((12,12),np.uint8)
+        #mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+    
+
+        
+        original = cv2.bitwise_and(original, original, mask=mask)
+        
+        gray = cv2.cvtColor(original,cv2.COLOR_BGR2GRAY)
+
+
+        
+        edged = cv2.Canny(gray, 30, 200)
+
+        contours = cv2.findContours(edged, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+        contours = contours[0] if len(contours) == 2 else contours[1]
+
+        i=0
+
+        for c in contours:
+            x,y,w,h = cv2.boundingRect(c)
+            if w>10 and y<=int(image.shape[0]/2):
+                i+=1
+
+        if i==0 and checker:
+            checker=False
+            healthbars+=1      
+        else:
+            checker=True
+        
+        if healthbars>=2:
+             queue.put("stop")
+        else:
+            queue.put("nothing")
+
+def CheckSide():
     red,green,blue=16,165,156
     red1,green1,blue1=17,166,218
+
+    image =screenshot(lol_game)
+    image = cv2.cvtColor(np.array(image), cv2.COLOR_BGR2HSV)
+    
+    image = cv2.blur(image, (3,3)) 
+
+    lower = np.array([red,green,blue], dtype="uint8")
+    upper = np.array([red1,green1,blue1], dtype="uint8")
+    mask = cv2.inRange(image, lower, upper)
+
+    #define kernel size  
+    
+    # Remove unnecessary noise from mask
+    kernel = np.ones((7,7),np.uint8)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+    
+    cnts = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    cnts = cnts[0] if len(cnts) == 2 else cnts[1]
+
+    if len(cnts)!=0:
+        return "blue"
+    else:
+        return "red"
+
+def DetectAllyMinions(image):
+    red,green,blue=16,159,208
+    red1,green1,blue1=17,161,211
+
+    lower = np.array([red,green,blue], dtype="uint8")
+    upper = np.array([red1,green1,blue1], dtype="uint8")
+    mask = cv2.inRange(image, lower, upper)
+
+    output = cv2.bitwise_and(image, image, mask=mask)
+
+    gray = cv2.cvtColor(output,cv2.COLOR_BGR2GRAY)
+            # threshold
+    edged = cv2.Canny(gray, 30, 200)
+
+    # get contour bounding boxes and draw on copy of input
+    contours = cv2.findContours(edged, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    contours = contours[0] if len(contours) == 2 else contours[1]
+
+    #ShowSmallImg(mask)
+
+    return len(contours)
+
+def DetectEnemyTowers():
+    red,green,blue=166,195,168
+    red1,green1,blue1=170,201,169 
     while True:
         if cv2.waitKey(1) == 27:
             break
         image =p.screenshot()
-        image1=cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
-        original = image1.copy()
-        image = cv2.cvtColor(np.array(image), cv2.COLOR_BGR2HSV)
-        
-        image = cv2.blur(image, (3,3)) 
-        
-        
+        image = cv2.cvtColor(np.array(image), cv2.COLOR_BGR2HSV_FULL)
+        original=image.copy()
         
 
 
@@ -237,42 +343,50 @@ def DetectTowers():
         mask = cv2.inRange(image, lower, upper)
 
         #define kernel size  
-        
-        # Remove unnecessary noise from mask
-        kernel = np.ones((7,7),np.uint8)
+        kernel = np.ones((12,12),np.uint8)
         mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
-        mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
-        
-        cnts = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        cnts = cnts[0] if len(cnts) == 2 else cnts[1]
-
-
-        for c in cnts:
-            x,y,w,h = cv2.boundingRect(c)
-            if w>10 and h>20 and w<200 and h<200:
-                cv2.rectangle(original, (x, y), (x + w, y + h), (36,255,12), 2)
-
 
         original = cv2.bitwise_and(original, original, mask=mask)
+        gray = cv2.cvtColor(original,cv2.COLOR_BGR2GRAY)
+
+        # threshold
+
+        
+        edged = cv2.Canny(gray, 30, 200)
+
+        # get contour bounding boxes and draw on copy of input
+        contours = cv2.findContours(edged, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+        contours = contours[0] if len(contours) == 2 else contours[1]
+
+        for c in contours:
+            x,y,w,h = cv2.boundingRect(c)
+            if w>10:
+                print(w)
+                
+
+        
+        
 
         scale_percent = 60 # percent of original size
-        width = int(original.shape[1] * scale_percent / 100)
-        height = int(original.shape[0] * scale_percent / 100)
+        width = int(image.shape[1] * scale_percent / 100)
+        height = int(image.shape[0] * scale_percent / 100)
         dim = (width, height)
 
         # resize image
-        resized = cv2.resize(original, dim, interpolation = cv2.INTER_AREA)
+        resized = cv2.resize(mask, dim, interpolation = cv2.INTER_AREA)
 
-        cv2.imshow("result1", resized)
+        cv2.imshow("result1", resized)   
 
 def DetectEnemyMinions():
-    red,green,blue=118,138,141
-    red1,green1,blue1=132,143,151
+    red,green,blue=119,140,207
+    red1,green1,blue1=122,140,211
 
-    prevX,prevY=0,0
     while True:   
+        if cv2.waitKey(1) == 27:
+            break
         image =screenshot(lol_game)
         image = cv2.cvtColor(np.array(image), cv2.COLOR_BGR2HSV)
+        allies=DetectAllyMinions(image)
 
 
         lower = np.array([red,green,blue], dtype="uint8")
@@ -292,86 +406,120 @@ def DetectEnemyMinions():
         contours = contours[0] if len(contours) == 2 else contours[1]
         
 
-        positions=[]
-        enemycheck=False
+
+        widths=[]
         for c in contours:    
-            x,y,w,h =cv2.boundingRect(c)
-            if w>1 and h>1:
-                enemycheck=True
-                poss=x,y
-                positions.append(poss) 
-                
-        if enemycheck:
-            x,y=positions[random.randint(0,len(positions)-1)]
-            autoit.mouse_click("right", x, y, 1)
+            _,_,w,h =cv2.boundingRect(c)
+            if w>10:
+                widths.append(w)
 
-        sleep(3)
-
-def DetectAllyMinions():
-    red,green,blue=15,159,208
-    red1,green1,blue1=26,161,209
-    while(True):     
-        if cv2.waitKey(1) == 27:
-            break
-          
-        # values of blue, green, red
-          
-        image = p.screenshot()
-
-        image = cv2.cvtColor(np.array(image), cv2.COLOR_BGR2HSV)
-        original = image.copy()
         
         
-        #image = cv2.blur(image, (3,3)) 
-        
-        
+        if len(contours)>allies:
+            print("red")
+        if len(contours)>0:
+            x,y,_,_ =cv2.boundingRect(contours[widths.index(min(widths))])
+            autoit.mouse_click("right",x,y, 1)
 
-
-        lower = np.array([red,green,blue], dtype="uint8")
-        upper = np.array([red1,green1,blue1], dtype="uint8")
-        mask = cv2.inRange(image, lower, upper)
+def LevelUp(spell):
+    keyboard.press("ctrl")
+    keyboard.press(spell)
     
-        #define kernel size  
+    keyboard.release("ctrl")
+    keyboard.release(spell)
+
+def DetectXp():
+    red,green,blue=92,99,255
+    red1,green1,blue1=92,104,255
+
+    image=screenshot(lol_game)
+    image = cv2.cvtColor(np.array(image), cv2.COLOR_BGR2HSV)
+    original=image.copy()
+    
+
+    
+    
+    lower = np.array([red,green,blue], dtype="uint8")
+    upper = np.array([red1,green1,blue1], dtype="uint8")
+    mask = cv2.inRange(image, lower, upper)
         
-        # Remove unnecessary noise from mask
 
-        
-        """
-        cnts = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        cnts = cnts[0] if len(cnts) == 2 else cnts[1]
+    original = cv2.bitwise_and(original, original, mask=mask)
+    gray = cv2.cvtColor(original,cv2.COLOR_BGR2GRAY)
 
 
-        for c in cnts:
-            x,y,w,h = cv2.boundingRect(c)
-            if w>10 and h>20 and w<200 and h<200:
-                cv2.rectangle(original, (x, y), (x + w, y + h), (36,255,12), 2)
+    
+    edged = cv2.Canny(gray, 30, 200)
 
-        """
-        original = cv2.bitwise_and(original, original, mask=mask)
+    # get contour bounding boxes and draw on copy of input
+    contours = cv2.findContours(edged, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    contours = contours[0] if len(contours) == 2 else contours[1]
 
-        scale_percent = 60 # percent of original size
-        width = int(original.shape[1] * scale_percent / 100)
-        height = int(original.shape[0] * scale_percent / 100)
-        dim = (width, height)
+    return len(contours)
 
-        # resize image
-        resized = cv2.resize(original, dim, interpolation = cv2.INTER_AREA)
+def GetXp(pixels):
+    level=3
+    spells=["q","w","e"]
+    pointer=-1
+    while True:
+        pixelsnow=DetectXp()
+        print(level) 
+        if pixelsnow>=pixels or pixelsnow>=pixels-10:
+            level+=1
+            if level==6 or level==11 or level==16:
+                LevelUp("r")
+            else:
+                pointer+=1
+                if pointer==3:
+                    pointer=0
+                LevelUp(spells[pointer])
 
-        cv2.imshow("result1", resized)
-
+            sleep(1)
+          
 def PlayGame():
+    print("start")
     press_key("y")
-    ButItems()
+    side=CheckSide()
+    XPpixels=DetectXp()
+    BuyItems()
+    spells=["q","w","e"]
+    sleep(1)
+    for spell in spells:
+        LevelUp(spell)
     
+    image =screenshot(lol_game)
+    image = cv2.cvtColor(np.array(image), cv2.COLOR_BGR2HSV)
+    height,width=image.shape[0],image.shape[1]
+    q=mp.Queue()
+    sleep(3)
+    if side=="blue":
+        autoit.mouse_click("right",int(width/1.5),int(height/4), 1)
+    else:
+        autoit.mouse_click("right",int(width/4),int(height/1.5), 1)
+    
+    p1 = mp.Process(target=DetectAllyTowers, args=(q,))
+    p2 = mp.Process(target=GetXp, args=(XPpixels,))
+    p1.start()
+    p2.start()
+    while True:
+        msg = q.get()
+        if msg =="stop":
+            p1.terminate()
+            break
+        if side=="blue":
+            autoit.mouse_click("right",int(width/1.5),int(height/4), 1)
+        else:
+            autoit.mouse_click("right",int(width/4),int(height/1.5), 1)
+    
+    p3 = mp.Process(target=DetectEnemyMinions)
+    p3.start()
     
     
 
 def main():
-    p1=mp.Process(target=DetectHealth)
-    p1.start()
+    PlayGame()
+        
 
-       
-        
-        
+   
 if __name__ == '__main__':
     main()

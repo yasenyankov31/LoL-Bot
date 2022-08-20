@@ -1,4 +1,3 @@
-import UIclicker
 import time
 from tkinter import LEFT
 import numpy as np
@@ -328,7 +327,7 @@ def LevelUp():
         
         sleep(60)
 
-def FollowAllyTest():
+def FollowAllyTest():    
     hMin = 0 
     sMin = 134
     vMin = 133
@@ -376,7 +375,6 @@ def FollowAllyTest():
                 break
 
 def main():
-    UIclicker.Terminateprcs()
     pqueue = Queue()
     mouse.click(Button.left, 1)
     sleep(3)
