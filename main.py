@@ -1,5 +1,6 @@
 import menu
 import game
+from utils import sleep
 
 
 
@@ -10,6 +11,7 @@ def main():
     game.PlayGame()
     while True:
         menu.LaunchGame(LoopButtons)
+        sleep(40)
         game.PlayGame()
 
 
