@@ -11,6 +11,7 @@ from win32gui import FindWindow, GetWindowRect
 import multiprocessing as mp
 import autoit
 import psutil
+import random
 
 
 user32 = ctypes.windll.user32
@@ -35,10 +36,15 @@ def screenshot(window_title=None):
         return im
 
 def sleep(x):
-    for i in range(x):
+    for _ in range(x):
         time.sleep(1)
 
 def press_key(key):
     keyboard.press(key)
     keyboard.release(key)
 
+def checkIfGameExist():
+    hwnd = win32gui.FindWindow(None,lol_game)
+    if hwnd!=0:
+        return True
+    return False

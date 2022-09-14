@@ -1,20 +1,15 @@
 from utils import *
-import random
 
-def ScreenShotLeague():
-    image =screenshot(lol_game)
-    image.save("level.png")
-
-def ShowSmallImg(original):
-    scale_percent = 60 # percent of original size
-    width = int(original.shape[1] * scale_percent / 100)
-    height = int(original.shape[0] * scale_percent / 100)
-    dim = (width, height)
-
-    # resize image
-    resized = cv2.resize(original, dim, interpolation = cv2.INTER_AREA)
-
-    cv2.imshow("result1", resized)
+def Greet(msg):
+    words=msg.split()
+    press_key("enter")
+    for word in words:
+        sleep(1)
+        word=list(word)
+        for letter in word:
+            press_key(letter)
+        press_key("space")
+    press_key("enter")
 
 def FindMenuWord(menu_word,clicks):
     img=screenshot(lol_game)
@@ -32,7 +27,6 @@ def FindMenuWord(menu_word,clicks):
         if word.lower()==menu_word:
             x,y = image_data['left'][i],image_data['top'][i]
             autoit.mouse_click("left", x, y, clicks)
-            break
 
 def BuyItems():
     press_key("p")
@@ -47,6 +41,7 @@ def DetectHealth(queue):
     red1,green1,blue1=19,255,16
     deadFlag=False
     prevHealthBar=0
+    maxHealthBar=0
     while True:
         image=screenshot(lol_game)
         
@@ -85,11 +80,14 @@ def DetectHealth(queue):
                 BuyItems()
             deadFlag=True
         else:
-            queue.put("alive")
             _,_,w,_=cv2.boundingRect(contours[0])
             if w<prevHealthBar:
-                print("Took damage")
+                queue.put("back")
+            else:
+                queue.put("alive")
             prevHealthBar=w
+            if maxHealthBar==0:
+                maxHealthBar=w
 
             if deadFlag:
                 deadFlag=False
@@ -228,11 +226,12 @@ def DetectEnemyMinions(side,height,width,queue):
     red,green,blue=119,140,207
     red1,green1,blue1=122,140,211
     spells=["q","w","e"]
+    backFlag=0
+    spellFlag=0
     while True:
         queueCommand=queue.get()
         if queueCommand!="dead":
             image =screenshot(lol_game)
-            xT,yT=DetectEnemyTowers(image)
             image = cv2.cvtColor(np.array(image), cv2.COLOR_BGR2HSV)
             allies=DetectAllyMinions(image)
 
@@ -261,7 +260,12 @@ def DetectEnemyMinions(side,height,width,queue):
                     widths.append(w)
             
             #back off if there is only enemy  
-            if len(widths)>allies:
+            if queueCommand=="back":
+                backFlag=2
+
+
+            if backFlag!=0:
+                backFlag-=1
                 if side=="blue":               
                     autoit.mouse_click("right",int(width/4),int(height/1.5), 1)
                 else:
@@ -269,25 +273,29 @@ def DetectEnemyMinions(side,height,width,queue):
                 sleep(1)
             else:
                 #navigate to enemy
-                if len(widths)==0:
+                if len(widths)<3:
                     if side=="blue":               
                         autoit.mouse_click("right",int(width/1.5),int(height/4), 1)
                     else:
                         autoit.mouse_click("right",int(width/4),int(height/1.5), 1)
-                    
+                else:    
                 #attack
-                if len(widths)>0:
-                    if xT!="Nothing":
-                        autoit.mouse_click("right",xT,yT, 1)
-                    else:
+                    if len(widths)>0:
                         x,y,_,_ =cv2.boundingRect(contours[widths.index(min(widths))])
                         spell=random.choice(spells)
-                        press_key(spell)
+                        spellFlag+=1
+                        if spellFlag==5:
+                            spellFlag=0
+                            press_key(spell)
+                            autoit.mouse_click("left",x,y, 1)
+                            press_key(spell)
+                        
                         autoit.mouse_click("right",x,y, 1)
-                        press_key(spell)
-                        autoit.mouse_click("left",x,y, 1)
-
-
+                    
+                    elif allies >0:
+                        xT,yT=DetectEnemyTowers(image)
+                        if xT!="Nothing":
+                            autoit.mouse_click("right",xT,yT, 1)
 
         while not queue.empty():
             queue.get()
@@ -304,7 +312,6 @@ def GetXp():
     pointer=-1
     while True:
         sleep(30)
-        print("Level up")
         LevelUp("r")
         pointer+=1
         if pointer==3:
@@ -315,6 +322,9 @@ def PlayGame():
     print("start")
     queue=mp.Queue()
     press_key("y")
+    Greet("hello team")
+    sleep(1)
+    Greet("gl and hf")
     image =screenshot(lol_game)
     image = cv2.cvtColor(np.array(image), cv2.COLOR_BGR2HSV)
     height,width=image.shape[0],image.shape[1]
@@ -346,12 +356,14 @@ def PlayGame():
     p3 = mp.Process(target=DetectEnemyMinions, args=(side,height,width,queue))
     p3.start()
     
+    while True:
+        if checkIfGameExist()==False:
+            print("Game Ended")
+            p1.kill()
+            p2.kill()
+            p3.kill()
+            break
     
-def main():
-    queue=mp.Queue()
-    DetectHealth(queue)
-        
+    
 
    
-if __name__ == '__main__':
-    main()

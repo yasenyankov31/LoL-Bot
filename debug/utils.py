@@ -43,3 +43,8 @@ def press_key(key):
     keyboard.press(key)
     keyboard.release(key)
 
+def checkIfGameExist():
+    hwnd = win32gui.FindWindow(None,lol_game)
+    if hwnd!=0:
+        return True
+    return False

@@ -66,8 +66,7 @@ def CheckIfGameStarted(queue):
                 queue.put("GAME STARTED")    
                 press_key("escape")
 
-def LaunchGame():
-    buttons=['play','pvp','aram','confirm','find']
+def LaunchGame(buttons):
     for button in buttons:
         FindButton(button)
         sleep(3)
